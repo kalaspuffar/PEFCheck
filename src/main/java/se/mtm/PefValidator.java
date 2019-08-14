@@ -100,6 +100,15 @@ public class PefValidator {
      * @param args the first argument is the file to run.
      */
     public static void main(String[] args) {
+
+        if(args.length != 1) {
+            System.out.println("PEF-Validator " + PefValidator.class.getPackage().getImplementationVersion());
+            System.out.println();
+            System.out.println("java -jar pef-validator.jar [options] inputfile");
+
+            System.exit(1);
+        }
+
         try {
             DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = builderFactory.newDocumentBuilder();
