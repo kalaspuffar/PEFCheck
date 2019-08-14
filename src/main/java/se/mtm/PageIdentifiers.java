@@ -21,6 +21,13 @@ public class PageIdentifiers {
      */
     boolean empty = false;
 
+    public PageIdentifiers(int orgStartPage, int orgEndPage, int pefPage, boolean empty) {
+        this.orgStartPage = orgStartPage;
+        this.orgEndPage = orgEndPage;
+        this.pefPage = pefPage;
+        this.empty = empty;
+    }
+
     public int getOrgStartPage() {
         return orgStartPage;
     }

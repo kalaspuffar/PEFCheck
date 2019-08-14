@@ -21,16 +21,59 @@ public class PefValidator {
      * @return      Object with startPage, endPage in the original, the pef page and if the page is empty.
      */
     protected PageIdentifiers getPageIdentifiers(Element page) {
-        return new PageIdentifiers();
+        return new PageIdentifiers(-1, -1, -1, false);
     }
 
     /**
      * Given a string representing a page number return the current number.
      *
-     * @param num   String representing the number #[a-z]+ or __[ivl]+
+     * @param num   String representing the number #[a-j]+ or __[ivl]+
      * @return      A number equal to the number representation. Returns -1 if incorrect.
      */
     protected int getPageNumber(String num) {
+        num = num.trim();
+        final String allowedSyntax = "(#[a-j]+)|(_[mdclxvi])|(__[mdclxvi]+)";
+        final String alphaNumbers = "jabcdefghi";
+
+        if (!num.matches(allowedSyntax)) {
+            return -1;
+        }
+
+        if(num.startsWith("#")) {
+            int sum = 0;
+            for(int i = 1; i < num.length(); i++) {
+                if(i != 1) {
+                    sum *= 10;
+                }
+                sum += alphaNumbers.indexOf(num.charAt(i));
+            }
+            return sum;
+        } else if(num.startsWith("__")) {
+            // We don't allow single numbers when 2 control characters are used.
+            if (num.length() < 4) {
+                return -1;
+            }
+            num = num.substring(2).toUpperCase();
+
+            int result = 0;
+            int[] decimal = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
+            String[] roman = {"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"};
+            for (int i = 0; i < decimal.length; i++) {
+                while (num.indexOf(roman[i]) == 0){
+                    result += decimal[i];
+                    num = num.substring(roman[i].length());
+                }
+            }
+            return result;
+        } else if(num.startsWith("_")) {
+            final String romanNumbers = "MDCLXVI";
+            final int[] romanToDecimal = {1000, 500, 100, 50, 10, 5, 1};
+            int index = romanNumbers.indexOf(num.substring(1).toUpperCase());
+            if(index == -1) {
+                return -1;
+            }
+            return romanToDecimal[index];
+        }
         return -1;
     }
 
