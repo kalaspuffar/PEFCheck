@@ -1,5 +1,6 @@
 package se.mtm;
 
+import com.sun.media.sound.InvalidFormatException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -60,11 +61,35 @@ public class PEFCheck {
     /**
      * Extract page identifiers from current page.
      *
-     * @param page  Element containing the page information.
-     * @return      Object with startPage, endPage in the original, the pef page and if the page is empty.
+     * @param page      Element containing the page information.
+     * @param leftPage  True if this is the left side page this means the pef page number is
+     *                  on the left side. The original page numbering is on the opposite side.
+     * @param indexPage Index pages are pages using roman numbers and created by the pef processor,
+     *                  these pages aren't a part of the original content so they will not have an
+     * @return          Object with startPage, endPage in the original, the pef page and if the page is empty.
      */
-    protected PageIdentifiers processPage(Element page) {
-        return new PageIdentifiers();
+    protected PageIdentifiers processPage(Element page, boolean leftPage, boolean indexPage) throws InvalidFormatException {
+        if (!page.getTagName().equalsIgnoreCase("page")) {
+            throw new InvalidFormatException("page tag incorrect");
+        }
+        if (page.getChildNodes().getLength() == 0) {
+            throw new InvalidFormatException("No rows present");
+        }
+        if (page.getFirstChild().getTextContent().isEmpty()) {
+            throw new InvalidFormatException("No data in first row");
+        }
+
+        PageIdentifiers pageIdentifiers = getPageIdentifiers(
+                page.getFirstChild().getTextContent(), leftPage, indexPage
+        );
+
+        if (pageIdentifiers.getPefPage() == -1) {
+            throw new InvalidFormatException("Can't find the page number");
+        }
+
+        pageIdentifiers.setEmpty(page.getChildNodes().getLength() < 2);
+
+        return pageIdentifiers;
     }
 
     /**
@@ -131,7 +156,7 @@ public class PEFCheck {
         for(int i = 0; i < volumeList.getLength(); i++) {
             NodeList pageList = (NodeList) xPath.compile("section/page").evaluate(volumeList.item(i), XPathConstants.NODESET);
             for(int j = titlePages; j < pageList.getLength(); j++) {
-                PageIdentifiers pageIdentifiers = processPage((Element) pageList.item(j));
+                PageIdentifiers pageIdentifiers = processPage((Element) pageList.item(j), false, false);
             }
         }
     }

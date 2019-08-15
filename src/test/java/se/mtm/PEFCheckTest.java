@@ -1,7 +1,13 @@
 package se.mtm;
 
+import com.sun.media.sound.InvalidFormatException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -100,5 +106,62 @@ public class PEFCheckTest {
         assertEquals(410, pageIdentifiers.getPefPage(), "Handle the 410th normal page, PEF page");
         assertEquals(208, pageIdentifiers.getOrgStartPage(), "Handle the 410th normal page, original start page");
         assertEquals(210, pageIdentifiers.getOrgEndPage(), "Handle the 410th normal page, original end page");
+    }
+
+    @DisplayName("Test that we incorrect page objects")
+    @Test
+    public void testExtractingIncorrectPageObjects() throws Exception{
+        final PEFCheck pefValidator = new PEFCheck();
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        DocumentBuilder db = dbf.newDocumentBuilder();
+        Document doc = db.newDocument();
+        final Element invalidPage = doc.createElement("notpage");
+
+        assertThrows(InvalidFormatException.class, () -> {
+            pefValidator.processPage(invalidPage, false, false);
+        }, "If the page tag is incorrect we should throw InvalidFormatException");
+
+        final Element page = doc.createElement("page");
+        assertThrows(InvalidFormatException.class, () -> {
+            pefValidator.processPage(page, false, false);
+        }, "If the page don't have any rows should throw InvalidFormatException");
+
+        Element row = doc.createElement("row");
+        page.appendChild(row);
+
+        assertThrows(InvalidFormatException.class, () -> {
+            pefValidator.processPage(page, false, false);
+        }, "If the first row is empty we should throw InvalidFormatException");
+
+        row.setTextContent("not the correct data");
+        assertThrows(InvalidFormatException.class, () -> {
+            pefValidator.processPage(page, false, false);
+        }, "If the don't have correct page information we should throw InvalidFormatException");
+    }
+
+    @DisplayName("Test that we correct page objects")
+    @Test
+    public void testExtractingCorrectPageObjects() throws Exception{
+        PEFCheck pefValidator = new PEFCheck();
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        DocumentBuilder db = dbf.newDocumentBuilder();
+        Document doc = db.newDocument();
+        Element page = doc.createElement("page");
+        Element row = doc.createElement("row");
+        page.appendChild(row);
+        row.setTextContent("    #bc                     #a");
+        PageIdentifiers pageIdentifiers = pefValidator.processPage(page, false, false);
+
+        assertEquals(1, pageIdentifiers.getPefPage(), "Handle the one page, PEF page");
+        assertEquals(23, pageIdentifiers.getOrgStartPage(), "Handle the one page, original start page");
+        assertEquals(-1, pageIdentifiers.getOrgEndPage(), "Handle the one page, original end page");
+        assertTrue(pageIdentifiers.isEmpty(), "Handle the one page, is empty");
+
+        Element row2 = doc.createElement("row");
+        page.appendChild(row2);
+        row2.setTextContent("  såg hennes huvud utsträckt");
+        pageIdentifiers = pefValidator.processPage(page, false, false);
+
+        assertFalse(pageIdentifiers.isEmpty(), "Handle the one page, is not empty");
     }
 }
