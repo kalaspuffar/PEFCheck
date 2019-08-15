@@ -181,9 +181,33 @@ public class PEFCheck {
         for(int i = 0; i < volumeList.getLength(); i++) {
             NodeList sectionList = (NodeList) xPath.compile("section").evaluate(volumeList.item(i), XPathConstants.NODESET);
             for(int j = titlePages; j < sectionList.getLength(); j++) {
-                processSection((Element) sectionList.item(j), false);
+                Element section = (Element) sectionList.item(j);
+                processSection(section, isIndexSection(section));
             }
         }
+    }
+
+    /**
+     * This function checks if the current section is containing a page index
+     * and should therefore use roman page numbering.
+     *
+     * @param section   Section object to check for roman page numbering.
+     * @return          True if roman page numbers are present.
+     */
+    protected boolean isIndexSection(Element section) throws InvalidFormatException {
+        if (!section.getTagName().equalsIgnoreCase("section")) {
+            throw new InvalidFormatException("section tag incorrect");
+        }
+        if (section.getChildNodes().getLength() == 0) {
+            throw new InvalidFormatException("No pages present");
+        }
+        Element page = (Element)section.getFirstChild();
+        if (page.getChildNodes().getLength() == 0) {
+            throw new InvalidFormatException("No rows present");
+        }
+        Element row = (Element)page.getFirstChild();
+
+        return row.getTextContent().trim().equalsIgnoreCase("_i");
     }
 
     /**

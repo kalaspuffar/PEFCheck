@@ -190,8 +190,8 @@ public class PEFCheckTest {
             pefValidator.processPage(section, false, false);
         }, "If the section don't have any pages should throw InvalidFormatException");
 
-        Element row = doc.createElement("page");
-        section.appendChild(row);
+        Element page = doc.createElement("page");
+        section.appendChild(page);
 
         assertThrows(InvalidFormatException.class, () -> {
             pefValidator.processPage(section, false, false);
@@ -252,5 +252,60 @@ public class PEFCheckTest {
         assertFalse(identifiers.get(0).isEmpty(), "Handle index section, not empty");
         assertEquals(2, identifiers.get(1).getPefPage(), "Handle index section, PEF page two");
         assertTrue(identifiers.get(1).isEmpty(), "Handle index section, empty");
+    }
+
+    @DisplayName("Test that we handle incorrect sections")
+    @Test
+    public void testIsSectionIndexWithIncorrectSection() throws Exception {
+        final PEFCheck pefValidator = new PEFCheck();
+        Document doc = newDocument();
+
+        Element invalidSection = doc.createElement("notsection");
+
+        assertThrows(InvalidFormatException.class, () -> {
+            pefValidator.isIndexSection(invalidSection);
+        }, "If the section tag is incorrect we should throw InvalidFormatException");
+
+        final Element section = doc.createElement("section");
+        assertThrows(InvalidFormatException.class, () -> {
+            pefValidator.isIndexSection(section);
+        }, "If the section don't have any pages should throw InvalidFormatException");
+
+        Element page = doc.createElement("page");
+        section.appendChild(page);
+
+        assertThrows(InvalidFormatException.class, () -> {
+            pefValidator.isIndexSection(section);
+        }, "If the first page is empty we should throw InvalidFormatException");
+    }
+
+    @DisplayName("Test that we can identity index sections")
+    @Test
+    public void testIsSectionIndexWithIndexSection() throws Exception {
+        final PEFCheck pefValidator = new PEFCheck();
+        Document doc = newDocument();
+
+        Element section = doc.createElement("section");
+
+        Element firstPage = doc.createElement("page");
+        firstPage.appendChild(createRow("                            _i", doc));
+        section.appendChild(firstPage);
+
+        assertTrue(pefValidator.isIndexSection(section), "This should be an index section");
+    }
+
+    @DisplayName("Test that we can identify normal sections")
+    @Test
+    public void testIsSectionIndexWithNormalSection() throws Exception {
+        final PEFCheck pefValidator = new PEFCheck();
+        Document doc = newDocument();
+
+        Element section = doc.createElement("section");
+
+        Element firstPage = doc.createElement("page");
+        firstPage.appendChild(createRow("    #e--#g                  #a", doc));
+        section.appendChild(firstPage);
+
+        assertFalse(pefValidator.isIndexSection(section), "This should not be an index section");
     }
 }
