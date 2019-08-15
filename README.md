@@ -1,4 +1,4 @@
-# pef-validator
+# PEFCheck
 
 This validator will aim to check a pef file for common errors that may occur in the format. 
 Reporting these errors and handling them before production can be crucial for good quality of

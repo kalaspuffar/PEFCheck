@@ -10,7 +10,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
-public class PefValidator {
+public class PEFCheck {
     private boolean leftPage = false;
     private int titlePages = 1;
 
@@ -102,9 +102,9 @@ public class PefValidator {
     public static void main(String[] args) {
 
         if(args.length != 1) {
-            System.out.println("PEF-Validator " + PefValidator.class.getPackage().getImplementationVersion());
+            System.out.println("PEFCheck " + PEFCheck.class.getPackage().getImplementationVersion());
             System.out.println();
-            System.out.println("java -jar pef-validator.jar [options] inputfile");
+            System.out.println("java -jar pefcheck.jar [options] inputfile");
 
             System.exit(1);
         }
@@ -114,7 +114,7 @@ public class PefValidator {
             DocumentBuilder builder = builderFactory.newDocumentBuilder();
             Document xmlDocument = builder.parse(args[0]);
 
-            PefValidator pefValidator = new PefValidator();
+            PEFCheck pefValidator = new PEFCheck();
             pefValidator.processDocument(xmlDocument);
         } catch (Exception e) {
             e.printStackTrace();

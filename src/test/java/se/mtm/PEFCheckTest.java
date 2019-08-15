@@ -5,12 +5,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class PefValidatorTest {
+public class PEFCheckTest {
 
     @DisplayName("Test that an incorrect page number returns -1")
     @Test
     void testIncorrectPageNumber() {
-        PefValidator pefValidator = new PefValidator();
+        PEFCheck pefValidator = new PEFCheck();
         assertEquals(-1, pefValidator.getPageNumber("dsjiads"), "Handle incorrect number");
         assertEquals(-1, pefValidator.getPageNumber("#dsqjiads"), "Handle incorrect number");
     }
@@ -18,7 +18,7 @@ public class PefValidatorTest {
     @DisplayName("Test that correct numbers return their values")
     @Test
     void testCorrectPageNumber() {
-        PefValidator pefValidator = new PefValidator();
+        PEFCheck pefValidator = new PEFCheck();
         assertEquals(1, pefValidator.getPageNumber("#a"), "Can handle one number");
         assertEquals(5, pefValidator.getPageNumber("#e"), "Can handle another number");
         assertEquals(10, pefValidator.getPageNumber("#aj"), "Can handle more than one number");
@@ -29,7 +29,7 @@ public class PefValidatorTest {
     @DisplayName("Test that an incorrect roman numerals returns -1")
     @Test
     void testIncorrectRomanNumerals() {
-        PefValidator pefValidator = new PefValidator();
+        PEFCheck pefValidator = new PEFCheck();
         assertEquals(-1, pefValidator.getPageNumber("_ii"), "Handle incorrect number");
         assertEquals(-1, pefValidator.getPageNumber("__i"), "Handle incorrect number");
     }
@@ -37,7 +37,7 @@ public class PefValidatorTest {
     @DisplayName("Test that we can handle roman numerals")
     @Test
     void testCorrectRomanNumerals() {
-        PefValidator pefValidator = new PefValidator();
+        PEFCheck pefValidator = new PEFCheck();
         assertEquals(1, pefValidator.getPageNumber("_i"), "Can handle one");
         assertEquals(5, pefValidator.getPageNumber("_v"), "Can handle five");
         assertEquals(10, pefValidator.getPageNumber("_x"), "Can handle more than one number");
