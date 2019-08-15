@@ -3,6 +3,7 @@ package se.mtm;
 import com.sun.media.sound.InvalidFormatException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -10,6 +11,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PEFCheck {
     private boolean leftPage = false;
@@ -145,18 +148,40 @@ public class PEFCheck {
         return -1;
     }
 
+    protected List<PageIdentifiers> processSection(Element section, boolean indexSection) throws Exception {
+        List<PageIdentifiers> pageIdentifiersList = new ArrayList<>();
+
+        if (!section.getTagName().equalsIgnoreCase("section")) {
+            throw new InvalidFormatException("section tag incorrect");
+        }
+        if (section.getChildNodes().getLength() == 0) {
+            throw new InvalidFormatException("No pages present");
+        }
+
+        NodeList pageList = section.getChildNodes();
+        boolean leftPage = false;
+        for(int j = 0; j < pageList.getLength(); j++) {
+            pageIdentifiersList.add(processPage((Element) pageList.item(j), leftPage, indexSection));
+            leftPage = !leftPage;
+        }
+
+        return pageIdentifiersList;
+    }
+
+
     /**
+     * Process an PEF document finding which sections we should handle in different ways.
      *
-     * @param xmlDocument
-     * @throws Exception
+     * @param xmlDocument       XML document in PEF format
+     * @throws Exception        Throws exceptions when the document is not well formatted.
      */
     protected void processDocument(Document xmlDocument) throws Exception {
         XPath xPath = XPathFactory.newInstance().newXPath();
         NodeList volumeList = (NodeList) xPath.compile("//volume").evaluate(xmlDocument, XPathConstants.NODESET);
         for(int i = 0; i < volumeList.getLength(); i++) {
-            NodeList pageList = (NodeList) xPath.compile("section/page").evaluate(volumeList.item(i), XPathConstants.NODESET);
-            for(int j = titlePages; j < pageList.getLength(); j++) {
-                PageIdentifiers pageIdentifiers = processPage((Element) pageList.item(j), false, false);
+            NodeList sectionList = (NodeList) xPath.compile("section").evaluate(volumeList.item(i), XPathConstants.NODESET);
+            for(int j = titlePages; j < sectionList.getLength(); j++) {
+                processSection((Element) sectionList.item(j), false);
             }
         }
     }
