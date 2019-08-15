@@ -9,7 +9,7 @@ public class PEFCheckTest {
 
     @DisplayName("Test that an incorrect page number returns -1")
     @Test
-    void testIncorrectPageNumber() {
+    public void testIncorrectPageNumber() {
         PEFCheck pefValidator = new PEFCheck();
         assertEquals(-1, pefValidator.getPageNumber("dsjiads"), "Handle incorrect number");
         assertEquals(-1, pefValidator.getPageNumber("#dsqjiads"), "Handle incorrect number");
@@ -17,7 +17,7 @@ public class PEFCheckTest {
 
     @DisplayName("Test that correct numbers return their values")
     @Test
-    void testCorrectPageNumber() {
+    public void testCorrectPageNumber() {
         PEFCheck pefValidator = new PEFCheck();
         assertEquals(1, pefValidator.getPageNumber("#a"), "Can handle one number");
         assertEquals(5, pefValidator.getPageNumber("#e"), "Can handle another number");
@@ -28,7 +28,7 @@ public class PEFCheckTest {
 
     @DisplayName("Test that an incorrect roman numerals returns -1")
     @Test
-    void testIncorrectRomanNumerals() {
+    public void testIncorrectRomanNumerals() {
         PEFCheck pefValidator = new PEFCheck();
         assertEquals(-1, pefValidator.getPageNumber("_ii"), "Handle incorrect number");
         assertEquals(-1, pefValidator.getPageNumber("__i"), "Handle incorrect number");
@@ -48,5 +48,57 @@ public class PEFCheckTest {
         assertEquals(1337, pefValidator.getPageNumber("__mcccxxxvii"), "Can be leet.");
         assertEquals(1771, pefValidator.getPageNumber("__mdcclxxi"), "Can handle an important year");
         assertEquals(2019, pefValidator.getPageNumber("__mmxix"), "Can handle this year");
+    }
+
+    @DisplayName("Test that we can extract index pages")
+    @Test
+    public void testExtractingIndexPages() {
+        PEFCheck pefValidator = new PEFCheck();
+        PageIdentifiers pageIdentifiers = pefValidator.getPageIdentifiers(
+            "                            _i", false, true
+        );
+
+        assertEquals(1, pageIdentifiers.getPefPage(), "Handle the first index page");
+
+        pageIdentifiers = pefValidator.getPageIdentifiers(
+            "    __ii", true, true
+        );
+
+        assertEquals(2, pageIdentifiers.getPefPage(), "Handle the second index page");
+
+        pageIdentifiers = pefValidator.getPageIdentifiers(
+            "    __ix", true, true
+        );
+
+        assertEquals(9, pageIdentifiers.getPefPage(), "Handle the ninth index page");
+    }
+
+    @DisplayName("Test that we can extract normal pages")
+    @Test
+    public void testExtractingNormalPages() {
+        PEFCheck pefValidator = new PEFCheck();
+        PageIdentifiers pageIdentifiers = pefValidator.getPageIdentifiers(
+                "    #bc                     #a", false, false
+        );
+
+        assertEquals(1, pageIdentifiers.getPefPage(), "Handle the first normal page, PEF page");
+        assertEquals(23, pageIdentifiers.getOrgStartPage(), "Handle the first normal page, original start page");
+        assertEquals(-1, pageIdentifiers.getOrgEndPage(), "Handle the first normal page, original end page");
+
+        pageIdentifiers = pefValidator.getPageIdentifiers(
+                "    #b                #bc--#bd", true, false
+        );
+
+        assertEquals(2, pageIdentifiers.getPefPage(), "Handle the second normal page, PEF page");
+        assertEquals(23, pageIdentifiers.getOrgStartPage(), "Handle the second normal page, original start page");
+        assertEquals(24, pageIdentifiers.getOrgEndPage(), "Handle the second normal page, original end page");
+
+        pageIdentifiers = pefValidator.getPageIdentifiers(
+                "    #daj            #bjh--#baj", true, false
+        );
+
+        assertEquals(410, pageIdentifiers.getPefPage(), "Handle the 410th normal page, PEF page");
+        assertEquals(208, pageIdentifiers.getOrgStartPage(), "Handle the 410th normal page, original start page");
+        assertEquals(210, pageIdentifiers.getOrgEndPage(), "Handle the 410th normal page, original end page");
     }
 }

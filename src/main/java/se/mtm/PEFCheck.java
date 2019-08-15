@@ -15,13 +15,56 @@ public class PEFCheck {
     private int titlePages = 1;
 
     /**
+     * This function takes a row of page identifiers and extracts the page numbers.
+     *
+     * @param row       Data from top of page
+     * @param leftPage  True if this is the left side page this means the pef page number is
+     *                  on the left side. The original page numbering is on the opposite side.
+     * @param indexPage Index pages are pages using roman numbers and created by the pef processor,
+     *                  these pages aren't a part of the original content so they will not have an
+     *                  original page numbering.
+     * @return
+     */
+    protected PageIdentifiers getPageIdentifiers(String row, boolean leftPage, boolean indexPage) {
+        PageIdentifiers pageIdentifiers = new PageIdentifiers();
+        if(indexPage) {
+            pageIdentifiers.setPefPage(getPageNumber(row));
+            return pageIdentifiers;
+        }
+
+        String pefPage, orgPages;
+        row = row.trim();
+        int middle = row.indexOf(" ");
+        if(leftPage) {
+            pefPage = row.substring(0, middle);
+            orgPages = row.substring(middle + 1);
+        } else {
+            orgPages = row.substring(0, middle);
+            pefPage = row.substring(middle + 1);
+        }
+
+        pageIdentifiers.setPefPage(getPageNumber(pefPage));
+
+        if(orgPages.contains("--")) {
+            String[] orgPagesArr = orgPages.split("--");
+            pageIdentifiers.setOrgStartPage(getPageNumber(orgPagesArr[0]));
+            pageIdentifiers.setOrgEndPage(getPageNumber(orgPagesArr[1]));
+        } else {
+            pageIdentifiers.setOrgStartPage(getPageNumber(orgPages));
+        }
+
+        return pageIdentifiers;
+    }
+
+
+    /**
      * Extract page identifiers from current page.
      *
      * @param page  Element containing the page information.
      * @return      Object with startPage, endPage in the original, the pef page and if the page is empty.
      */
-    protected PageIdentifiers getPageIdentifiers(Element page) {
-        return new PageIdentifiers(-1, -1, -1, false);
+    protected PageIdentifiers processPage(Element page) {
+        return new PageIdentifiers();
     }
 
     /**
@@ -88,7 +131,7 @@ public class PEFCheck {
         for(int i = 0; i < volumeList.getLength(); i++) {
             NodeList pageList = (NodeList) xPath.compile("section/page").evaluate(volumeList.item(i), XPathConstants.NODESET);
             for(int j = titlePages; j < pageList.getLength(); j++) {
-                PageIdentifiers pageIdentifiers = getPageIdentifiers((Element) pageList.item(j));
+                PageIdentifiers pageIdentifiers = processPage((Element) pageList.item(j));
             }
         }
     }
