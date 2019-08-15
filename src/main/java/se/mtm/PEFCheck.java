@@ -6,6 +6,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.xml.bind.ValidationException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
@@ -208,6 +209,30 @@ public class PEFCheck {
         Element row = (Element)page.getFirstChild();
 
         return row.getTextContent().trim().equalsIgnoreCase("_i");
+    }
+
+    /**
+     * This function will validate the page sequence to check for page ranges missing.
+     * It will report if it finds a sequence of missing numbers and throw exception.
+     *
+     * @param pageIdentifiers       List of pages identifiers to validate
+     * @param startPage             This page is the page before this sequence starts
+     * @return                      next start page
+     * @throws ValidationException  Throws validation exception if a break in sequence is found.
+     */
+    protected int validatePageSequence(List<PageIdentifiers> pageIdentifiers, int startPage) throws ValidationException {
+        return 0;
+    }
+
+    /**
+     * This function runs the page list and looks for empty pages. Report on the PEF number missing and
+     * returns result.
+     *
+     * @param pageIdentifiers     Page sequence to check for empty pages.
+     * @return                    true if empty pages where found.
+     */
+    protected boolean hasEmptyPages(List<PageIdentifiers> pageIdentifiers) {
+        return false;
     }
 
     /**
