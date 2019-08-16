@@ -1,19 +1,15 @@
 package se.mtm;
 
-import com.sun.media.sound.InvalidFormatException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.xml.bind.ValidationException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.io.File;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -380,13 +376,24 @@ public class PEFCheck {
         if(args.length != 1) {
             System.out.println("PEFCheck " + PEFCheck.class.getPackage().getImplementationVersion());
             System.out.println();
-            System.out.println("java -jar pefcheck.jar [options] inputfile");
+            System.out.println("java -jar pefcheck.jar [options] input_directory");
 
             System.exit(1);
         }
         try {
             PEFCheck pefCheck = new PEFCheck();
-            pefCheck.processFile(new File(args[0]));
+
+            File dir = new File(args[0]);
+            if(!dir.isDirectory()) {
+                System.err.println("File is not a directory.");
+                System.exit(-1);
+            }
+
+            for (File f : dir.listFiles()) {
+                if(f.getName().equals(".") || f.getName().equals("..")) continue;
+                if(!f.getName().endsWith(".pef")) continue;
+                pefCheck.processFile(f);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

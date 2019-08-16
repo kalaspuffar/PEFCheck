@@ -1,7 +1,5 @@
 package se.mtm;
 
-import com.sun.media.sound.InvalidFormatException;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
