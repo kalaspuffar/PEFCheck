@@ -11,6 +11,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -392,6 +393,90 @@ public class PEFCheckTest {
 
         assertEquals("#aj (10)", pefCheck.getPrintablePageNumber(10, false),
                 "Can handle pef number 10"
+        );
+    }
+
+    @DisplayName("Test that we can validate correct page sequences.")
+    @Test
+    public void testValidationOfPageSequence() throws Exception {
+        final PEFCheck pefCheck = new PEFCheck();
+
+        List<PageIdentifiers> pageIdentifiers = new ArrayList<>();
+        pageIdentifiers.add(new PageIdentifiers(1, -1, -1, true, false));
+        pageIdentifiers.add(new PageIdentifiers(2, -1, -1, true, false));
+        pageIdentifiers.add(new PageIdentifiers(3, -1, -1, true, false));
+
+        assertEquals(3, pefCheck.validatePageSequence(pageIdentifiers, 0),
+        "Check that we can validate a correct page sequence from zero"
+        );
+
+        pageIdentifiers = new ArrayList<>();
+        pageIdentifiers.add(new PageIdentifiers(42, -1, -1, true, false));
+        pageIdentifiers.add(new PageIdentifiers(43, -1, -1, true, false));
+        pageIdentifiers.add(new PageIdentifiers(44, -1, -1, true, false));
+
+        assertEquals(44, pefCheck.validatePageSequence(pageIdentifiers, 41),
+        "Check that we can validate a correct page sequence from 42"
+        );
+    }
+
+    @DisplayName("Test that we can validate incorrect page sequences.")
+    @Test
+    public void testValidationOfIncorrectPageSequence() throws Exception {
+        final PEFCheck pefCheck = new PEFCheck();
+
+        List<PageIdentifiers> pageIdentifiers = new ArrayList<>();
+        pageIdentifiers.add(new PageIdentifiers(2, -1, -1, true, false));
+        pageIdentifiers.add(new PageIdentifiers(3, -1, -1, true, false));
+        pageIdentifiers.add(new PageIdentifiers(4, -1, -1, true, false));
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream outOrig = System.out;
+        System.setOut(new PrintStream(baos));
+        assertEquals(4, pefCheck.validatePageSequence(pageIdentifiers, 0),
+                "Check that we can validate a incorrect page sequence from zero"
+        );
+        System.setOut(outOrig);
+        assertEquals("--- Missing page(s) between #j (0) and #b (2)", baos.toString().trim(),
+        "Check that we report the missing page before sequence"
+        );
+
+        pageIdentifiers = new ArrayList<>();
+        pageIdentifiers.add(new PageIdentifiers(1, -1, -1, true, false));
+        pageIdentifiers.add(new PageIdentifiers(6, -1, -1, true, false));
+        pageIdentifiers.add(new PageIdentifiers(7, -1, -1, true, false));
+
+        baos = new ByteArrayOutputStream();
+        outOrig = System.out;
+        System.setOut(new PrintStream(baos));
+        assertEquals(7, pefCheck.validatePageSequence(pageIdentifiers, 0),
+        "Check that we can validate a incorrect page sequence from zero with missing pages in the middle"
+        );
+        System.setOut(outOrig);
+        assertEquals("--- Missing page(s) between #a (1) and #f (6)", baos.toString().trim(),
+        "Check that we report the missing page in the middle of the sequence"
+        );
+    }
+
+    @DisplayName("Test that we can process a file with text and report issues correctly.")
+    @Test
+    public void testFileProcessing() throws Exception {
+
+        ClassLoader classLoader = PEFCheckTest.class.getClassLoader();
+        File bookFile = new File(classLoader.getResource("testfiles/simple-book.pef").getFile());
+
+        final PEFCheck pefCheck = new PEFCheck();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream outOrig = System.out;
+        System.setOut(new PrintStream(baos));
+        pefCheck.processFile(bookFile);
+        System.setOut(outOrig);
+        assertEquals(
+                "Checking file simple-book.pef\n" +
+                        "--- Empty page __iii (3)\n" +
+                        "--- Missing page(s) between #a (1) and #d (4)"
+                , baos.toString().trim(),
+                "Check that we report the missing page before sequence"
         );
     }
 }

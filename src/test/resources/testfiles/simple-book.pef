@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pef xmlns="http://www.daisy.org/ns/2008/pef" version="2008-1">
+    <head>
+        <meta xmlns:dc="http://purl.org/dc/elements/1.1/"
+            xmlns:generator="http://www.daisy.org/ns/2015/dotify">
+            <dc:format>application/x-pef+xml</dc:format>
+            <dc:identifier>dummy-id-a7265c5f4926c</dc:identifier>
+            <dc:date>2019-06-12</dc:date>
+            <dc:title>Poesi verkstad</dc:title>
+            <dc:creator>Persson, Daniel</dc:creator>
+            <dc:language>sv</dc:language>
+            <dc:publisher>TPB</dc:publisher>
+            <dc:source>DUMMY</dc:source>
+            <generator:entry key="dateFormat">yyyy-MM-dd</generator:entry>
+            <generator:entry key="systemRelease">3.1.0</generator:entry>
+            <generator:entry key="outer-margin">2</generator:entry>
+            <generator:entry key="page-height">29</generator:entry>
+            <generator:entry key="date">2019-06-12</generator:entry>
+            <generator:entry key="inner-margin">2</generator:entry>
+            <generator:entry key="page-width">32</generator:entry>
+            <generator:entry key="conversionDate">Wed Jun 12 16:20:37 CEST 2019</generator:entry>
+            <generator:entry key="systemBuild">f6456fb4c648496540f30e6cc673e31003c2ef53</generator:entry>
+            <generator:entry key="outputFormat">pef</generator:entry>
+            <generator:entry key="identifier">dummy-id-a7265c5f4926c</generator:entry>
+            <generator:entry key="splitterMax">50</generator:entry>
+            <generator:entry key="row-spacing">2</generator:entry>
+            <generator:entry key="locale">sv-SE</generator:entry>
+            <generator:entry key="systemName">Dotify</generator:entry>
+            <generator:entry key="inputFormat">dtbook</generator:entry>
+        </meta>
+    </head>
+    <body>
+        <volume rowgap="0" duplex="true" rows="29" cols="32">
+            <section>
+                <page>
+                    <row>  pccccccccccccccccccccccccccô</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l     _poesi verkstad      |</row>
+                    <row>  l                          |</row>
+                    <row>  l     _daniel _persson     |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l                          |</row>
+                    <row>  l    _volym ett av ett     |</row>
+                    <row>  v--------------------------#</row>
+                </page>
+            </section>
+            <section rowgap="4">
+                <page>
+                    <row rowgap="0">                            _i</row>
+                    <row></row>
+                    <row></row>
+                    <row></row>
+                    <row>  _daniel _persson, som debu-</row>
+                    <row>  terade #aigi med diktsam-</row>
+                    <row>  lingen _-_jag är ensam</row>
+                    <row>  i mitt rum,û har givit ut</row>
+                    <row>  dikter.</row>
+                </page>
+                <page>
+                    <row>    __ii</row>
+                    <row>  Kanske under ytan finns</row>
+                    <row>  det mer att se.</row>
+                </page>
+                <page>
+                    <row rowgap="0">                         __iii</row>
+                </page>
+            </section>
+            <section rowgap="4">
+                <page>
+                    <row rowgap="0">    #e--#g                  #a</row>
+                    <row></row>
+                    <row></row>
+                    <row>  _kanske, kanske, kanske</row>
+                    <row>  cccccccccccccccccccccccccccc</row>
+                    <row></row>
+                    <row></row>
+                    <row>    Inte för att det finns</row>
+                    <row>    någon poäng att skriva text</row>
+                    <row>    här men tänkte att det kanske</row>
+                    <row>    var bra att skriva något så</row>
+                    <row>    testet verkar så authentis-</row>
+                    <row>    kt. Så läs inte denna text</row>
+                    <row>    så noga för då kanske du</row>
+                    <row rowgap="0">    blir besviken.</row>
+                </page>
+                <page>
+                    <row>    #d                      #g</row>
+                    <row>  Jag är bestämt övertygad</row>
+                    <row>  om att denna texten inte alls</row>
+                    <row>  spelar någon roll men det kan</row>
+                    <row>  vara skoj att se hur mycket</row>
+                    <row>  man kan skriva utan att</row>
+                    <row>  egentligen säga något. </row>
+                    <row>  Det kan vara en utmann-</row>
+                    <row>  ing att hitta på text som</row>
+                    <row>  har betydelse men att </row>
+                    <row>  hitta på nonsense är hur</row>
+                    <row>  enkelt som helst om man </row>
+                    <row>  inte bryr sig om att skriva</row>
+                    <row>  med korrekt grammatik eller</row>
+                    <row rowgap="0">  speciella stavelser.</row>
+                </page>
+            </section>
+        </volume>
+    </body>
+</pef>

@@ -12,6 +12,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
+import java.io.File;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,22 +78,22 @@ public class PEFCheck {
         if (!page.getTagName().equalsIgnoreCase("page")) {
             throw new InvalidFormatException("page tag incorrect");
         }
-        if (page.getChildNodes().getLength() == 0) {
+        if (countChildren(page) == 0) {
             throw new InvalidFormatException("No rows present");
         }
-        if (page.getFirstChild().getTextContent().isEmpty()) {
+        if (getFirstChild(page).getTextContent().isEmpty()) {
             throw new InvalidFormatException("No data in first row");
         }
 
         PageIdentifiers pageIdentifiers = getPageIdentifiers(
-                page.getFirstChild().getTextContent(), leftPage, indexPage
+                getFirstChild(page).getTextContent(), leftPage, indexPage
         );
 
         if (pageIdentifiers.getPefPage() == -1) {
             throw new InvalidFormatException("Can't find the page number");
         }
 
-        pageIdentifiers.setEmpty(page.getChildNodes().getLength() < 2);
+        pageIdentifiers.setEmpty(countChildren(page) < 2);
         pageIdentifiers.setIndexPage(indexPage);
 
         return pageIdentifiers;
@@ -167,13 +168,14 @@ public class PEFCheck {
         if (!section.getTagName().equalsIgnoreCase("section")) {
             throw new InvalidFormatException("section tag incorrect");
         }
-        if (section.getChildNodes().getLength() == 0) {
+        if (countChildren(section) == 0) {
             throw new InvalidFormatException("No pages present");
         }
 
         NodeList pageList = section.getChildNodes();
         boolean leftPage = false;
         for(int j = 0; j < pageList.getLength(); j++) {
+            if(!(pageList.item(j) instanceof Element)) continue;
             pageIdentifiersList.add(processPage((Element) pageList.item(j), leftPage, indexSection));
             leftPage = !leftPage;
         }
@@ -190,14 +192,61 @@ public class PEFCheck {
      */
     protected void processDocument(Document xmlDocument) throws Exception {
         XPath xPath = XPathFactory.newInstance().newXPath();
+
+        int startPage = 0;
+
         NodeList volumeList = (NodeList) xPath.compile("//volume").evaluate(xmlDocument, XPathConstants.NODESET);
         for(int i = 0; i < volumeList.getLength(); i++) {
             NodeList sectionList = (NodeList) xPath.compile("section").evaluate(volumeList.item(i), XPathConstants.NODESET);
             for(int j = titlePages; j < sectionList.getLength(); j++) {
+                if(!(sectionList.item(j) instanceof Element)) continue;
                 Element section = (Element) sectionList.item(j);
-                processSection(section, isIndexSection(section));
+                boolean indexSection = isIndexSection(section);
+                List<PageIdentifiers> pageIdentifiersList = processSection(section, indexSection);
+
+                if(indexSection) {
+                    validatePageSequence(pageIdentifiersList, 0);
+                } else {
+                    startPage = validatePageSequence(pageIdentifiersList, startPage);
+                }
+
+                hasEmptyPages(pageIdentifiersList);
             }
         }
+    }
+
+    /**
+     * Gets the real first element of a parent element. There could be empty text nodes
+     * between elements and we don't care about them.
+     *
+     * @param parent                    Parent to search through
+     * @return                          The first child element of the parent.
+     * @throws InvalidFormatException   Throws exception if no children are found.
+     */
+    private Element getFirstChild(Element parent) throws InvalidFormatException {
+        NodeList children = parent.getChildNodes();
+        for(int i = 0; i < children.getLength(); i++) {
+            if(children.item(i) instanceof Element) {
+                return (Element) children.item(i);
+            }
+        }
+        throw new InvalidFormatException("Could not find child");
+    }
+
+    /**
+     * Counts the number of element children of the current parent. We don't care
+     * about text nodes in between so we will not count these.
+     *
+     * @param parent    Parent to count children of.
+     * @return          Number of children the parent has.
+     */
+    private int countChildren(Element parent) {
+        int children = 0;
+        for(int i = 0; i < parent.getChildNodes().getLength(); i++) {
+            if(!(parent.getChildNodes().item(i) instanceof Element)) continue;
+            children++;
+        }
+        return children;
     }
 
     /**
@@ -211,14 +260,14 @@ public class PEFCheck {
         if (!section.getTagName().equalsIgnoreCase("section")) {
             throw new InvalidFormatException("section tag incorrect");
         }
-        if (section.getChildNodes().getLength() == 0) {
+        if (countChildren(section) == 0) {
             throw new InvalidFormatException("No pages present");
         }
-        Element page = (Element)section.getFirstChild();
-        if (page.getChildNodes().getLength() == 0) {
+        Element page = getFirstChild(section);
+        if (countChildren(page) == 0) {
             throw new InvalidFormatException("No rows present");
         }
-        Element row = (Element)page.getFirstChild();
+        Element row = getFirstChild(page);
 
         return row.getTextContent().trim().equalsIgnoreCase("_i");
     }
@@ -263,15 +312,23 @@ public class PEFCheck {
 
     /**
      * This function will validate the page sequence to check for page ranges missing.
-     * It will report if it finds a sequence of missing numbers and throw exception.
+     * It will report if it finds a sequence of missing numbers.
      *
      * @param pageIdentifiers       List of pages identifiers to validate
      * @param startPage             This page is the page before this sequence starts
      * @return                      next start page
-     * @throws ValidationException  Throws validation exception if a break in sequence is found.
      */
-    protected int validatePageSequence(List<PageIdentifiers> pageIdentifiers, int startPage) throws ValidationException {
-        return 0;
+    protected int validatePageSequence(List<PageIdentifiers> pageIdentifiers, int startPage) {
+        for (PageIdentifiers pi : pageIdentifiers) {
+            if (pi.getPefPage() != startPage + 1) {
+                String error = "--- Missing page(s) between ";
+                error += getPrintablePageNumber(startPage, pi.isIndexPage());
+                error += " and " + getPrintablePageNumber(pi.getPefPage(), pi.isIndexPage());
+                System.out.println(error);
+            }
+            startPage = pi.getPefPage();
+        }
+        return startPage;
     }
 
     /**
@@ -297,6 +354,22 @@ public class PEFCheck {
     }
 
     /**
+     * This function takes a file and runs it through a processing with validation of
+     * empty pages and checks the sequence of pages.
+     *
+     * @param file      File to handle.
+     */
+    public void processFile(File file) throws Exception{
+        System.out.println("Checking file " + file.getName());
+        DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = builderFactory.newDocumentBuilder();
+        Document xmlDocument = builder.parse(file);
+        xmlDocument.normalize();
+        processDocument(xmlDocument);
+    }
+
+
+    /**
      * Given a file we will check if we have the right page num sequence for all pages
      * and look for empty pages.
      *
@@ -311,16 +384,13 @@ public class PEFCheck {
 
             System.exit(1);
         }
-
         try {
-            DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = builderFactory.newDocumentBuilder();
-            Document xmlDocument = builder.parse(args[0]);
-
-            PEFCheck pefValidator = new PEFCheck();
-            pefValidator.processDocument(xmlDocument);
+            PEFCheck pefCheck = new PEFCheck();
+            pefCheck.processFile(new File(args[0]));
         } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
+
 }
