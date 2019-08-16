@@ -4,22 +4,37 @@ public class PageIdentifiers {
     /**
      * The start page number of the original document of this page
      */
-    int orgStartPage = -1;
+    private int orgStartPage = -1;
 
     /**
      * The end page number of the original document of this page
      */
-    int orgEndPage = -1;
+    private int orgEndPage = -1;
 
     /**
      * The pef page number of this page
      */
-    int pefPage = -1;
+    private int pefPage = -1;
 
     /**
      * Checking if this page is empty.
      */
-    boolean empty = false;
+    private boolean empty = false;
+
+    /**
+     * Identified as an index page. (Roman numbers)
+     */
+    private boolean indexPage;
+
+    public PageIdentifiers() {}
+
+    public PageIdentifiers(int pefPage, int orgStartPage, int orgEndPage, boolean empty, boolean indexPage) {
+        this.pefPage = pefPage;
+        this.orgStartPage = orgStartPage;
+        this.orgEndPage = orgEndPage;
+        this.empty = empty;
+        this.indexPage = indexPage;
+    }
 
     public int getOrgStartPage() {
         return orgStartPage;
@@ -51,5 +66,13 @@ public class PageIdentifiers {
 
     public void setEmpty(boolean empty) {
         this.empty = empty;
+    }
+
+    public void setIndexPage(boolean indexPage) {
+        this.indexPage = indexPage;
+    }
+
+    public boolean isIndexPage() {
+        return indexPage;
     }
 }

@@ -12,6 +12,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,6 +93,7 @@ public class PEFCheck {
         }
 
         pageIdentifiers.setEmpty(page.getChildNodes().getLength() < 2);
+        pageIdentifiers.setIndexPage(indexPage);
 
         return pageIdentifiers;
     }
@@ -149,6 +151,16 @@ public class PEFCheck {
         return -1;
     }
 
+    /**
+     * Processing a section requires functionality to know which kind of page to handle. Each
+     * section starts with a right hand page and then follows by a left page, this will alternate
+     * through a book.
+     *
+     * @param section       Section to extract page information from.
+     * @param indexSection  True if the section is a index section. (Uses roman numbers)
+     * @return              A list of page identifiers that we can use for validation.
+     * @throws Exception    Throws an exception if the section is not correctly formatted.
+     */
     protected List<PageIdentifiers> processSection(Element section, boolean indexSection) throws Exception {
         List<PageIdentifiers> pageIdentifiersList = new ArrayList<>();
 
@@ -212,6 +224,44 @@ public class PEFCheck {
     }
 
     /**
+     * In order to present page numbers when we report issues we need to present them
+     * both as the decimal number and the original presentation in order to search and
+     * debug.
+     *
+     * @param pageNum       Number to present
+     * @param indexPage     True if this should be presented as roman numbers.
+     * @return              A string presenting both the original number and decimal.
+     */
+    protected String getPrintablePageNumber(int pageNum, boolean indexPage) {
+        String result = "";
+
+        if (indexPage) {
+            int[] decimal = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
+            String[] roman = {"m", "cm", "d", "cd", "c", "xc", "l", "xl", "x", "ix", "v", "iv", "i"};
+            int num = pageNum;
+            for (int i = 0; i < decimal.length; i++) {
+                while (num % decimal[i] < num) {
+                    result += roman[i];
+                    num -= decimal[i];
+                }
+            }
+            String prefix = result.length() == 1 ? "_" : "__";
+            return prefix + result + " (" + pageNum + ")";
+        }
+
+        String decimal = "1234567890";
+        String pef = "abcdefghij";
+
+        String orgNumber = "" + pageNum;
+        for (int i = 0; i < orgNumber.length(); i++) {
+            int index = decimal.indexOf(orgNumber.charAt(i));
+            result += pef.charAt(index);
+        }
+
+        return "#" + result + " (" + pageNum + ")";
+    }
+
+    /**
      * This function will validate the page sequence to check for page ranges missing.
      * It will report if it finds a sequence of missing numbers and throw exception.
      *
@@ -231,8 +281,19 @@ public class PEFCheck {
      * @param pageIdentifiers     Page sequence to check for empty pages.
      * @return                    true if empty pages where found.
      */
-    protected boolean hasEmptyPages(List<PageIdentifiers> pageIdentifiers) {
-        return false;
+    protected boolean hasEmptyPages(List<PageIdentifiers> pageIdentifiers) throws InvalidFormatException {
+        boolean empty = false;
+        for (PageIdentifiers pi : pageIdentifiers) {
+            if(pi.getPefPage() == -1) {
+                throw new InvalidFormatException("Incorrect page number when checking for empty pages");
+            }
+
+            if(pi.isEmpty()) {
+                System.out.println("--- Empty page " + getPrintablePageNumber(pi.getPefPage(), pi.isIndexPage()));
+                empty = true;
+            }
+        }
+        return empty;
     }
 
     /**
