@@ -14,8 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PEFCheck {
-    private boolean leftPage = false;
-    private int titlePages = 1;
+    private int numTitleSections = 1;
 
     /**
      * This function takes a row of page identifiers and extracts the page numbers.
@@ -38,23 +37,28 @@ public class PEFCheck {
         String pefPage, orgPages;
         row = row.trim();
         int middle = row.indexOf(" ");
-        if(leftPage) {
-            pefPage = row.substring(0, middle);
-            orgPages = row.substring(middle + 1);
+
+        if(middle == -1) {
+            pefPage = row;
         } else {
-            orgPages = row.substring(0, middle);
-            pefPage = row.substring(middle + 1);
+            if (leftPage) {
+                pefPage = row.substring(0, middle);
+                orgPages = row.substring(middle + 1);
+            } else {
+                orgPages = row.substring(0, middle);
+                pefPage = row.substring(middle + 1);
+            }
+
+            if(orgPages.contains("--")) {
+                String[] orgPagesArr = orgPages.split("--");
+                pageIdentifiers.setOrgStartPage(getPageNumber(orgPagesArr[0]));
+                pageIdentifiers.setOrgEndPage(getPageNumber(orgPagesArr[1]));
+            } else {
+                pageIdentifiers.setOrgStartPage(getPageNumber(orgPages));
+            }
         }
 
         pageIdentifiers.setPefPage(getPageNumber(pefPage));
-
-        if(orgPages.contains("--")) {
-            String[] orgPagesArr = orgPages.split("--");
-            pageIdentifiers.setOrgStartPage(getPageNumber(orgPagesArr[0]));
-            pageIdentifiers.setOrgEndPage(getPageNumber(orgPagesArr[1]));
-        } else {
-            pageIdentifiers.setOrgStartPage(getPageNumber(orgPages));
-        }
 
         return pageIdentifiers;
     }
@@ -70,15 +74,15 @@ public class PEFCheck {
      *                  these pages aren't a part of the original content so they will not have an
      * @return          Object with startPage, endPage in the original, the pef page and if the page is empty.
      */
-    protected PageIdentifiers processPage(Element page, boolean leftPage, boolean indexPage) throws InvalidFormatException {
+    protected PageIdentifiers processPage(Element page, boolean leftPage, boolean indexPage, int lastPage) throws InvalidFormatException {
         if (!page.getTagName().equalsIgnoreCase("page")) {
-            throw new InvalidFormatException("page tag incorrect");
+            throw new InvalidFormatException("page tag incorrect, lastPage " + getPrintablePageNumber(lastPage, indexPage));
         }
         if (countChildren(page) == 0) {
-            throw new InvalidFormatException("No rows present");
+            throw new InvalidFormatException("No rows present, lastPage " + getPrintablePageNumber(lastPage, indexPage));
         }
         if (getFirstChild(page).getTextContent().isEmpty()) {
-            throw new InvalidFormatException("No data in first row");
+            throw new InvalidFormatException("No data in first row, lastPage " + getPrintablePageNumber(lastPage, indexPage));
         }
 
         PageIdentifiers pageIdentifiers = getPageIdentifiers(
@@ -170,9 +174,15 @@ public class PEFCheck {
 
         NodeList pageList = section.getChildNodes();
         boolean leftPage = false;
+        int lastPage = 0;
+
         for(int j = 0; j < pageList.getLength(); j++) {
             if(!(pageList.item(j) instanceof Element)) continue;
-            pageIdentifiersList.add(processPage((Element) pageList.item(j), leftPage, indexSection));
+            if(getFirstChild((Element)pageList.item(j)).getTextContent().contains("_noter")) continue;
+
+            PageIdentifiers pi = processPage((Element) pageList.item(j), leftPage, indexSection, lastPage);
+            lastPage = pi.getPefPage();
+            pageIdentifiersList.add(pi);
             leftPage = !leftPage;
         }
 
@@ -184,29 +194,55 @@ public class PEFCheck {
      * Process an PEF document finding which sections we should handle in different ways.
      *
      * @param xmlDocument       XML document in PEF format
+     * @param validateEmptyPages
      * @throws Exception        Throws exceptions when the document is not well formatted.
      */
-    protected void processDocument(Document xmlDocument) throws Exception {
+    protected void processDocument(Document xmlDocument, boolean validateEmptyPages) throws Exception {
         XPath xPath = XPathFactory.newInstance().newXPath();
 
         int startPage = 0;
 
         NodeList volumeList = (NodeList) xPath.compile("//volume").evaluate(xmlDocument, XPathConstants.NODESET);
         for(int i = 0; i < volumeList.getLength(); i++) {
-            NodeList sectionList = (NodeList) xPath.compile("section").evaluate(volumeList.item(i), XPathConstants.NODESET);
-            for(int j = titlePages; j < sectionList.getLength(); j++) {
+            NodeList sectionList = (NodeList) xPath.compile("./section").evaluate(volumeList.item(i), XPathConstants.NODESET);
+
+            int indexStartPage = 0;
+
+            int sectionListLen = countChildren((Element) volumeList.item(i));
+
+            /*
+             * If this volume is the absolute last volume we will handle a number of end sections and
+             * don't look for page numbering on these sections. These are mostly used for print information.
+             */
+            boolean lastVolume = volumeList.getLength() - 1 == i;
+
+            for(int j = numTitleSections; j < sectionListLen; j++) {
                 if(!(sectionList.item(j) instanceof Element)) continue;
                 Element section = (Element) sectionList.item(j);
+
+                if (lastVolume) {
+                    Element page = getFirstChild(section);
+                    Element row = getFirstChild(page);
+                    if(row.getTextContent().isEmpty()) {
+                        NodeList rowList = (NodeList) xPath.compile("./row").evaluate(page, XPathConstants.NODESET);
+                        if (rowList.getLength() > 1 && rowList.item(1).getTextContent().contains("::::")) {
+                            continue;
+                        }
+                    }
+                }
+
                 boolean indexSection = isIndexSection(section);
                 List<PageIdentifiers> pageIdentifiersList = processSection(section, indexSection);
 
                 if(indexSection) {
-                    validatePageSequence(pageIdentifiersList, 0);
+                    indexStartPage = validatePageSequence(pageIdentifiersList, indexStartPage);
                 } else {
                     startPage = validatePageSequence(pageIdentifiersList, startPage);
                 }
 
-                hasEmptyPages(pageIdentifiersList);
+                if (validateEmptyPages) {
+                    hasEmptyPages(pageIdentifiersList);
+                }
             }
         }
     }
@@ -265,7 +301,7 @@ public class PEFCheck {
         }
         Element row = getFirstChild(page);
 
-        return row.getTextContent().trim().equalsIgnoreCase("_i");
+        return row.getTextContent().trim().startsWith("_");
     }
 
     /**
@@ -361,9 +397,8 @@ public class PEFCheck {
         DocumentBuilder builder = builderFactory.newDocumentBuilder();
         Document xmlDocument = builder.parse(file);
         xmlDocument.normalize();
-        processDocument(xmlDocument);
+        processDocument(xmlDocument, true);
     }
-
 
     /**
      * Given a file we will check if we have the right page num sequence for all pages
@@ -391,13 +426,11 @@ public class PEFCheck {
 
             for (File f : dir.listFiles()) {
                 if(f.getName().equals(".") || f.getName().equals("..")) continue;
-                if(!f.getName().endsWith(".pef")) continue;
+                if(!f.getName().endsWith(".xml")) continue;
                 pefCheck.processFile(f);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
-
 }

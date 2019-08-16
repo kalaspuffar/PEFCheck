@@ -133,24 +133,24 @@ public class PEFCheckTest {
         final Element invalidPage = doc.createElement("notpage");
 
         assertThrows(InvalidFormatException.class, () -> {
-            pefCheck.processPage(invalidPage, false, false);
+            pefCheck.processPage(invalidPage, false, false, 0);
         }, "If the page tag is incorrect we should throw InvalidFormatException");
 
         final Element page = doc.createElement("page");
         assertThrows(InvalidFormatException.class, () -> {
-            pefCheck.processPage(page, false, false);
+            pefCheck.processPage(page, false, false, 0);
         }, "If the page don't have any rows should throw InvalidFormatException");
 
         Element row = doc.createElement("row");
         page.appendChild(row);
 
         assertThrows(InvalidFormatException.class, () -> {
-            pefCheck.processPage(page, false, false);
+            pefCheck.processPage(page, false, false, 0);
         }, "If the first row is empty we should throw InvalidFormatException");
 
         row.setTextContent("not the correct data");
         assertThrows(InvalidFormatException.class, () -> {
-            pefCheck.processPage(page, false, false);
+            pefCheck.processPage(page, false, false, 0);
         }, "If the don't have correct page information we should throw InvalidFormatException");
     }
 
@@ -164,7 +164,7 @@ public class PEFCheckTest {
 
         page.appendChild(createRow("    #bc                     #a", doc));
 
-        PageIdentifiers pageIdentifiers = pefCheck.processPage(page, false, false);
+        PageIdentifiers pageIdentifiers = pefCheck.processPage(page, false, false, 0);
 
         assertEquals(1, pageIdentifiers.getPefPage(), "Handle the one page, PEF page");
         assertEquals(23, pageIdentifiers.getOrgStartPage(), "Handle the one page, original start page");
@@ -172,7 +172,7 @@ public class PEFCheckTest {
         assertTrue(pageIdentifiers.isEmpty(), "Handle the one page, is empty");
 
         page.appendChild(createRow("  såg hennes huvud utsträckt", doc));
-        pageIdentifiers = pefCheck.processPage(page, false, false);
+        pageIdentifiers = pefCheck.processPage(page, false, false, 0);
 
         assertFalse(pageIdentifiers.isEmpty(), "Handle the one page, is not empty");
     }
@@ -185,19 +185,19 @@ public class PEFCheckTest {
         final Element invalidSection = doc.createElement("notsection");
 
         assertThrows(InvalidFormatException.class, () -> {
-            pefCheck.processPage(invalidSection, false, false);
+            pefCheck.processPage(invalidSection, false, false, 0);
         }, "If the section tag is incorrect we should throw InvalidFormatException");
 
         final Element section = doc.createElement("section");
         assertThrows(InvalidFormatException.class, () -> {
-            pefCheck.processPage(section, false, false);
+            pefCheck.processPage(section, false, false, 0);
         }, "If the section don't have any pages should throw InvalidFormatException");
 
         Element page = doc.createElement("page");
         section.appendChild(page);
 
         assertThrows(InvalidFormatException.class, () -> {
-            pefCheck.processPage(section, false, false);
+            pefCheck.processPage(section, false, false, 0);
         }, "If the first page is empty we should throw InvalidFormatException");
     }
 
@@ -461,20 +461,61 @@ public class PEFCheckTest {
     public void testFileProcessing() throws Exception {
 
         ClassLoader classLoader = PEFCheckTest.class.getClassLoader();
-        File bookFile = new File(classLoader.getResource("testfiles/simple-book.pef").getFile());
+        File bookFile = new File(classLoader.getResource("testfiles/simple-book.xml").getFile());
 
         final PEFCheck pefCheck = new PEFCheck();
+
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PrintStream outOrig = System.out;
         System.setOut(new PrintStream(baos));
         pefCheck.processFile(bookFile);
         System.setOut(outOrig);
         assertEquals(
-                "Checking file simple-book.pef\n" +
+                "Checking file simple-book.xml\n" +
                         "--- Empty page __iii (3)\n" +
                         "--- Missing page(s) between #a (1) and #d (4)"
                 , baos.toString().trim(),
                 "Check that we report the missing page before sequence"
         );
     }
+
+    @DisplayName("Test that we can handle sections of notes, today we will ignore these.")
+    @Test
+    public void testNoteSections() throws Exception {
+        final PEFCheck pefCheck = new PEFCheck();
+        Document doc = newDocument();
+
+        Element section = doc.createElement("section");
+
+        Element firstPage = doc.createElement("page");
+        firstPage.appendChild(createRow("                    _noter #a", doc));
+        firstPage.appendChild(createRow("  såg hennes huvud utsträckt", doc));
+        section.appendChild(firstPage);
+
+        List<PageIdentifiers> identifiers = pefCheck.processSection(section, false);
+
+        assertTrue(identifiers.isEmpty(), "We don't extract notes sections.");
+    }
+
+    @DisplayName("Test that we can handle sections in the last volume that may be printing information.")
+    @Test
+    public void testPrintInformationSections() throws Exception {
+        final PEFCheck pefCheck = new PEFCheck();
+        Document doc = newDocument();
+
+        Element volume = doc.createElement("volume");
+        volume.appendChild(doc.createElement("section"));
+
+        Element section = doc.createElement("section");
+        volume.appendChild(section);
+        Element firstPage = doc.createElement("page");
+        firstPage.appendChild(createRow("", doc));
+        firstPage.appendChild(createRow(" :: _tryckuppgifter :::::::::", doc));
+        section.appendChild(firstPage);
+
+        doc.appendChild(volume);
+
+        pefCheck.processDocument(doc, false);
+    }
+
 }
